@@ -51,7 +51,7 @@ export default function SercApp() {
     }
   }
 
-  const entidades = resultado?.periodos?.[0]?.entidades || [];
+  const entidades = resultado?.results?.periodos?.[0]?.entidades || resultado?.periodos?.[0]?.entidades || [];
   const situMax = entidades.length ? Math.max(...entidades.map(e => e.situacion)) : null;
   const totalDeuda = entidades.reduce((a, e) => a + (e.monto || 0), 0);
   const s = situMax ? SITUACIONES[situMax] : null;
@@ -65,7 +65,7 @@ export default function SercApp() {
           <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg, #3b82f6, #6366f1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "white" }}>S</div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 800 }}>SERC</div>
-            <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 1 }}>SISTEMA DE EVALUACIÓN DE RIESGO CREDITICIO</div>
+            <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 8 }}>EVALUACIÓN CREDITICIA — {resultado?.results?.denominacion || resultado?.denominacion}</div>
           </div>
         </div>
 
