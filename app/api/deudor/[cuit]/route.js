@@ -4,7 +4,13 @@ export async function GET(request, { params }) {
   try {
     const res = await fetch(
       `https://api.bcra.gob.ar/centraldedeudores/v1.0/Deudas/${cuit}`,
-      { headers: { "Accept": "application/json" } }
+      {
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": "SERC-App/1.0"
+        },
+        cache: "no-store"
+      }
     );
 
     if (!res.ok) {
