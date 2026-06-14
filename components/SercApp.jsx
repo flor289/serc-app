@@ -81,9 +81,7 @@ export default function SercApp() {
     setError(null);
     setResultado(null);
     try {
-      const res = await fetch(`https://api.bcra.gob.ar/CentralDeDeudores/v1.0/Deudas/${cuitLimpio}`, {
-        headers: { "Accept": "application/json" }
-      });
+      const res = await fetch(`/api/deudor/${cuitLimpio}`);
       if (!res.ok) throw new Error("CUIT no encontrado en el BCRA");
       const data = await res.json();
       setResultado(data.results || data);
