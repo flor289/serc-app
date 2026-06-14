@@ -7,26 +7,28 @@ export async function GET(request, { params }) {
       {
         headers: {
           "Accept": "application/json",
-          "User-Agent": "SERC-App/1.0"
+          "User-Agent": "Mozilla/5.0"
         },
         cache: "no-store"
       }
     );
 
+    const text = await res.text();
+
     if (!res.ok) {
       return Response.json(
-        { error: "CUIT no encontrado en el BCRA" },
-        { status: 404 }
+        { error: `BCRA respondió ${res.status}: ${text}` },
+        { status: 200 }
       );
     }
 
-    const data = await res.json();
-    return Response.json(data);
+    const data = JSON.parse(text);
+    return Response.json(data.results || data);
 
   } catch (e) {
     return Response.json(
-      { error: "Error al conectar con el BCRA" },
-      { status: 500 }
+      { error: `Excepción: ${e.message}` },
+      { status: 200 }
     );
   }
 }
