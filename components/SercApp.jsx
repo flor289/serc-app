@@ -37,9 +37,9 @@ function SituacionBadge({ sit }) {
 
 function Row({ label, value }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
       <span style={{ color: "#64748b" }}>{label}</span>
-      <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{String(value ?? "—")}</span>
+      <span style={{ color: "#e2e8f0", fontWeight: 600, textAlign: "right", maxWidth: "60%" }}>{String(value ?? "—")}</span>
     </div>
   );
 }
@@ -76,42 +76,35 @@ function EntidadCard({ e }) {
 function GraficoHistorial({ periodos }) {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(null);
   if (!periodos || periodos.length === 0) return null;
-
   const ordenados = [...periodos].reverse();
   const maxMonto = Math.max(...ordenados.map(p => p.entidades?.reduce((a, e) => a + (e.monto || 0), 0) || 0));
-  const maxSit = Math.max(...ordenados.map(p => Math.max(...(p.entidades?.map(e => e.situacion) || [1]))));
-
-  const periodoData = periodoSeleccionado
-    ? periodos.find(p => p.periodo === periodoSeleccionado)
-    : null;
+  const periodoData = periodoSeleccionado ? periodos.find(p => p.periodo === periodoSeleccionado) : null;
 
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>
-        Historial 24 meses — tocá un mes para ver detalle
+        Historial 24 meses — tocá un mes
       </div>
-
-      {/* Gráfico de barras */}
       <div style={{ background: "#0f172a", borderRadius: 10, padding: "16px 12px", marginBottom: 16, overflowX: "auto" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, minWidth: ordenados.length * 32, height: 80 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 3, minWidth: ordenados.length * 22, height: 90 }}>
           {ordenados.map((p, i) => {
             const total = p.entidades?.reduce((a, e) => a + (e.monto || 0), 0) || 0;
             const sitMax = Math.max(...(p.entidades?.map(e => e.situacion) || [1]));
             const s = SITUACIONES[sitMax] || SITUACIONES[1];
-            const altura = maxMonto > 0 ? Math.max(4, (total / maxMonto) * 64) : 4;
+            const altura = maxMonto > 0 ? Math.max(4, (total / maxMonto) * 70) : 4;
             const seleccionado = periodoSeleccionado === p.periodo;
             return (
               <div key={i} onClick={() => setPeriodoSeleccionado(seleccionado ? null : p.periodo)}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", flex: 1 }}>
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
                 <div style={{
-                  width: "100%", height: altura,
+                  width: 10, height: altura,
                   background: s.color,
-                  borderRadius: 3,
-                  opacity: seleccionado ? 1 : 0.6,
-                  border: seleccionado ? `2px solid white` : "2px solid transparent",
+                  borderRadius: 2,
+                  opacity: seleccionado ? 1 : 0.55,
+                  border: seleccionado ? `1px solid white` : "1px solid transparent",
                   transition: "all 0.15s"
                 }} />
-                <div style={{ fontSize: 8, color: "#64748b", textAlign: "center", transform: "rotate(-45deg)", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 7, color: "#475569", writingMode: "vertical-rl", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>
                   {formatPeriodo(p.periodo)}
                 </div>
               </div>
@@ -119,21 +112,208 @@ function GraficoHistorial({ periodos }) {
           })}
         </div>
       </div>
-
-      {/* Detalle del mes seleccionado */}
       {periodoData && (
         <div style={{ background: "#0f172a", border: "1px solid #3b82f6", borderRadius: 10, padding: "16px 20px", marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: "#3b82f6", fontWeight: 700, marginBottom: 12 }}>
-            {formatPeriodo(periodoData.periodo)}
+            Detalle — {formatPeriodo(periodoData.periodo)}
           </div>
-          {periodoData.entidades?.map((e, i) => <EntidadCard key={i} e={e} />)}
-          {(!periodoData.entidades || periodoData.entidades.length === 0) && (
-            <div style={{ color: "#64748b", fontSize: 13 }}>Sin deudas registradas este mes.</div>
-          )}
+          {periodoData.entidades?.length > 0
+            ? periodoData.entidades.map((e, i) => <EntidadCard key={i} e={e} />)
+            : <div style={{ color: "#64748b", fontSize: 13 }}>Sin deudas registradas.</div>}
         </div>
       )}
     </div>
   );
+}
+
+function SeccionAFIP({ afip }) {
+  if (!afip) return null;
+  const d = afip.datosGenerales || afip;
+  return (
+    <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12, padding: "20px 24px", marginBottom: 24 }}>
+      <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Datos AFIP</div>
+      <Row label="Razón social" value={d.razonSocial || d.apellido ? `${d.apellido}, ${d.nombre}` : "—"} />
+      <Row label="Estado CUIT" value={d.estadoClave || "—"} />
+      <Row label="Tipo persona" value={d.tipoPersona || "—"} />
+      <Row label="Fecha inscripción" value={d.fechaInscripcion || "—"} />
+      <Row label="Fecha contrato social" value={d.fechaContratoSocial || "—"} />
+      {d.domicilioFiscal && <>
+        <Row label="Domicilio fiscal" value={`${d.domicilioFiscal.direccion || ""}, ${d.domicilioFiscal.localidad || ""}`} />
+        <Row label="Provincia" value={d.domicilioFiscal.descripcionProvincia || "—"} />
+        <Row label="Código postal" value={d.domicilioFiscal.codPostal || "—"} />
+      </>}
+      {d.impuestos?.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>IMPUESTOS INSCRIPTO</div>
+          {d.impuestos.map((imp, i) => (
+            <div key={i} style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>
+              • {imp.descripcionImpuesto} — desde {imp.periodoDesde}
+            </div>
+          ))}
+        </div>
+      )}
+      {d.actividades?.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>ACTIVIDADES ECONÓMICAS</div>
+          {d.actividades.map((act, i) => (
+            <div key={i} style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>
+              • {act.descripcionActividad} {act.nomenclador ? `(${act.nomenclador})` : ""}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SeccionCheques({ cheques }) {
+  if (!cheques) return null;
+  const causales = cheques.causales || [];
+  const total = causales.reduce((a, c) => a + (c.detalle?.length || 0), 0);
+  return (
+    <div style={{ background: "#0f172a", border: `1px solid ${total > 0 ? "#ef444440" : "#1e293b"}`, borderRadius: 12, padding: "20px 24px", marginBottom: 24 }}>
+      <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Cheques rechazados</div>
+      {total === 0
+        ? <div style={{ color: "#22c55e", fontWeight: 700 }}>✓ Sin cheques rechazados</div>
+        : causales.map((c, i) => (
+          <div key={i} style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: "#f97316", fontWeight: 700, marginBottom: 6 }}>{c.causal}</div>
+            {c.detalle?.map((d, j) => (
+              <div key={j} style={{ background: "#0a0f1e", borderRadius: 6, padding: "8px 12px", marginBottom: 6, fontSize: 12 }}>
+                <Row label="Entidad" value={d.entidad} />
+                <Row label="Monto" value={`$ ${(d.monto || 0).toLocaleString("es-AR")}`} />
+                <Row label="Fecha" value={d.fecha} />
+                <Row label="N° cheque" value={d.nroCheque} />
+              </div>
+            ))}
+          </div>
+        ))
+      }
+    </div>
+  );
+}
+
+function generarPDF(resultado, historial, afip, cheques, cuit) {
+  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const fp = (p) => {
+    if (!p || p.length < 6) return p;
+    return `${meses[parseInt(p.slice(4,6))-1]} ${p.slice(0,4)}`;
+  };
+  const entidades = resultado?.periodos?.[0]?.entidades || [];
+  const situMax = entidades.length ? Math.max(...entidades.map(e => e.situacion)) : 1;
+  const totalDeuda = entidades.reduce((a, e) => a + (e.monto || 0), 0);
+  const veredicto = situMax === 1 ? "APTO PARA CRÉDITO" : situMax === 2 ? "APTO CON OBSERVACIONES" : situMax === 3 ? "EVALUACIÓN REQUERIDA" : "NO APTO";
+  const d = afip?.datosGenerales || afip || {};
+  const causales = cheques?.causales || [];
+  const totalCheques = causales.reduce((a, c) => a + (c.detalle?.length || 0), 0);
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe SERC</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; font-size: 13px; }
+    h1 { color: #1e40af; font-size: 22px; margin-bottom: 4px; }
+    h2 { color: #1e40af; font-size: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-top: 28px; }
+    .veredicto { font-size: 24px; font-weight: 900; color: ${situMax <= 1 ? "#16a34a" : situMax === 2 ? "#ca8a04" : situMax === 3 ? "#ea580c" : "#dc2626"}; margin: 12px 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { background: #f1f5f9; text-align: left; padding: 8px; font-size: 12px; }
+    td { padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+    .ok { color: #16a34a; font-weight: 700; }
+    .mal { color: #dc2626; font-weight: 700; }
+    .footer { margin-top: 40px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+  </style></head><body>
+  <h1>SERC — Sistema de Evaluación de Riesgo Crediticio</h1>
+  <div style="color:#64748b; font-size:12px;">Informe generado el ${new Date().toLocaleDateString("es-AR")} a las ${new Date().toLocaleTimeString("es-AR")}</div>
+  <div style="color:#64748b; font-size:12px;">CUIT consultado: ${cuit}</div>
+
+  <h2>1. Identificación</h2>
+  <table>
+    <tr><th>Campo</th><th>Valor</th></tr>
+    <tr><td>Denominación (BCRA)</td><td>${resultado?.denominacion || "—"}</td></tr>
+    <tr><td>Razón social (AFIP)</td><td>${d.razonSocial || (d.apellido ? `${d.apellido}, ${d.nombre}` : "—")}</td></tr>
+    <tr><td>Estado CUIT</td><td>${d.estadoClave || "—"}</td></tr>
+    <tr><td>Tipo persona</td><td>${d.tipoPersona || "—"}</td></tr>
+    <tr><td>Fecha inscripción AFIP</td><td>${d.fechaInscripcion || "—"}</td></tr>
+    <tr><td>Domicilio fiscal</td><td>${d.domicilioFiscal ? `${d.domicilioFiscal.direccion || ""}, ${d.domicilioFiscal.localidad || ""}, ${d.domicilioFiscal.descripcionProvincia || ""}` : "—"}</td></tr>
+  </table>
+
+  ${d.actividades?.length > 0 ? `
+  <h2>2. Actividades económicas (AFIP)</h2>
+  <table>
+    <tr><th>Actividad</th><th>Nomenclador</th></tr>
+    ${d.actividades.map(a => `<tr><td>${a.descripcionActividad}</td><td>${a.nomenclador || "—"}</td></tr>`).join("")}
+  </table>` : ""}
+
+  ${d.impuestos?.length > 0 ? `
+  <h2>3. Impuestos inscripto (AFIP)</h2>
+  <table>
+    <tr><th>Impuesto</th><th>Desde</th></tr>
+    ${d.impuestos.map(i => `<tr><td>${i.descripcionImpuesto}</td><td>${i.periodoDesde || "—"}</td></tr>`).join("")}
+  </table>` : ""}
+
+  <h2>4. Evaluación crediticia (BCRA)</h2>
+  <div class="veredicto">${veredicto}</div>
+  <table>
+    <tr><th>Campo</th><th>Valor</th></tr>
+    <tr><td>Situación máxima</td><td>${situMax} — ${SITUACIONES[situMax]?.label || "—"}</td></tr>
+    <tr><td>Deuda total</td><td>${formatPesos(totalDeuda)}</td></tr>
+    <tr><td>Cantidad de entidades</td><td>${entidades.length}</td></tr>
+  </table>
+
+  <h2>5. Detalle de deudas actuales</h2>
+  <table>
+    <tr><th>Entidad</th><th>Monto</th><th>Situación</th><th>Días atraso</th><th>Garantía</th><th>Proc. judicial</th></tr>
+    ${entidades.map(e => `<tr>
+      <td>${e.entidad}</td>
+      <td>${formatPesos(e.monto)}</td>
+      <td>${e.situacion} — ${SITUACIONES[e.situacion]?.label || "—"}</td>
+      <td>${e.diasAtrasoPago ?? "—"}</td>
+      <td>${e.garantia || "Sin garantía"}</td>
+      <td>${e.procesoJud ? "Sí" : "No"}</td>
+    </tr>`).join("")}
+  </table>
+
+  ${historial?.periodos?.length > 0 ? `
+  <h2>6. Historial crediticio (últimos 24 meses)</h2>
+  <table>
+    <tr><th>Período</th><th>Entidad</th><th>Monto</th><th>Situación</th></tr>
+    ${[...historial.periodos].reverse().map(p =>
+      (p.entidades || []).map(e => `<tr>
+        <td>${fp(p.periodo)}</td>
+        <td>${e.entidad}</td>
+        <td>${formatPesos(e.monto)}</td>
+        <td>${e.situacion} — ${SITUACIONES[e.situacion]?.label || "—"}</td>
+      </tr>`).join("")
+    ).join("")}
+  </table>` : ""}
+
+  <h2>7. Cheques rechazados</h2>
+  ${totalCheques === 0
+    ? '<div class="ok">✓ Sin cheques rechazados registrados</div>'
+    : causales.map(c => `
+      <div class="mal">⚠ ${c.causal}</div>
+      <table>
+        <tr><th>Entidad</th><th>Monto</th><th>Fecha</th><th>N° cheque</th></tr>
+        ${(c.detalle || []).map(d => `<tr>
+          <td>${d.entidad}</td>
+          <td>$ ${(d.monto || 0).toLocaleString("es-AR")}</td>
+          <td>${d.fecha}</td>
+          <td>${d.nroCheque}</td>
+        </tr>`).join("")}
+      </table>`).join("")
+  }
+
+  <div class="footer">
+    Informe generado por SERC · Datos provistos por Central de Deudores BCRA y Padrón AFIP · Solo con fines informativos
+  </div>
+  </body></html>`;
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `SERC_${cuit}_${new Date().toISOString().slice(0,10)}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function SercApp() {
@@ -141,6 +321,8 @@ export default function SercApp() {
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [historial, setHistorial] = useState(null);
+  const [afip, setAfip] = useState(null);
+  const [cheques, setCheques] = useState(null);
   const [error, setError] = useState(null);
 
   const cuitLimpio = cuit.replace(/\D/g, "");
@@ -152,18 +334,21 @@ export default function SercApp() {
     setError(null);
     setResultado(null);
     setHistorial(null);
+    setAfip(null);
+    setCheques(null);
     try {
-      const [resActual, resHist] = await Promise.all([
+      const [resActual, resHist, resAfip, resCheques] = await Promise.all([
         fetch(`/api/deudor/${cuitLimpio}`),
-        fetch(`/api/historial/${cuitLimpio}`)
+        fetch(`/api/historial/${cuitLimpio}`),
+        fetch(`/api/afip/${cuitLimpio}`),
+        fetch(`/api/cheques/${cuitLimpio}`)
       ]);
       if (!resActual.ok) throw new Error("CUIT no encontrado en el BCRA");
       const dataActual = await resActual.json();
       setResultado(dataActual.results || dataActual);
-      if (resHist.ok) {
-        const dataHist = await resHist.json();
-        setHistorial(dataHist.results || dataHist);
-      }
+      if (resHist.ok) { const d = await resHist.json(); setHistorial(d.results || d); }
+      if (resAfip.ok) { const d = await resAfip.json(); setAfip(d.data || d); }
+      if (resCheques.ok) { const d = await resCheques.json(); setCheques(d.results || d); }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -195,7 +380,7 @@ export default function SercApp() {
             onKeyDown={e => e.key === "Enter" && consultar()} />
           <button onClick={consultar} disabled={!cuitValido || loading}
             style={{ background: cuitValido ? "linear-gradient(135deg, #3b82f6, #6366f1)" : "#1e293b", color: cuitValido ? "white" : "#475569", border: "none", borderRadius: 8, padding: "12px 24px", fontSize: 14, fontWeight: 700, cursor: cuitValido ? "pointer" : "default", minWidth: 100 }}>
-            {loading ? "..." : "Consultar"}
+            {loading ? "Consultando..." : "Consultar"}
           </button>
         </div>
 
@@ -206,24 +391,4 @@ export default function SercApp() {
             <div style={{ background: "#0f172a", border: `1px solid ${s.color}30`, borderRadius: 12, padding: "24px 28px", marginBottom: 24 }}>
               <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 8 }}>EVALUACIÓN CREDITICIA — {resultado.denominacion}</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: s.color, marginBottom: 8, fontFamily: "monospace" }}>{veredicto}</div>
-              <div style={{ display: "flex", gap: 32, flexWrap: "wrap", marginTop: 16 }}>
-                <div><div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>SITUACIÓN MÁX.</div><SituacionBadge sit={situMax} /></div>
-                <div><div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>DEUDA TOTAL</div><span style={{ fontWeight: 700 }}>{formatPesos(totalDeuda)}</span></div>
-                <div><div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>ENTIDADES</div><span style={{ fontWeight: 700 }}>{entidades.length}</span></div>
-              </div>
-            </div>
-
-            <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Situación actual</div>
-            {entidades.map((e, i) => <EntidadCard key={i} e={e} />)}
-
-            {historial && <GraficoHistorial periodos={historial.periodos} />}
-          </>
-        )}
-
-        <div style={{ marginTop: 60, fontSize: 11, color: "#334155", textAlign: "center" }}>
-          SERC · Datos provistos por Central de Deudores BCRA
-        </div>
-      </div>
-    </div>
-  );
-}
+              <div style={{ d
