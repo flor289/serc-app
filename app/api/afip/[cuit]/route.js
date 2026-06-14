@@ -1,9 +1,11 @@
+export const runtime = "edge";
+
 export async function GET(request, { params }) {
   const { cuit } = params;
   try {
     const res = await fetch(
       `https://soa.afip.gob.ar/sr-padron/v2/persona/${cuit}`,
-      { headers: { "Accept": "application/json" } }
+      { headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0" } }
     );
     const text = await res.text();
     return new Response(text, {
