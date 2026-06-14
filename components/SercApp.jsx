@@ -40,7 +40,9 @@ export default function SercApp() {
     setError(null);
     setResultado(null);
     try {
-      const res = await fetch(`/api/deudor/${cuitLimpio}`);
+      const res = await fetch(`https://api.bcra.gob.ar/CentralDeDeudores/v1.0/Deudas/${cuitLimpio}`, {
+  headers: { "Accept": "application/json" }
+});
       if (!res.ok) throw new Error("Error al consultar el BCRA");
       const data = await res.json();
       setResultado(data);
