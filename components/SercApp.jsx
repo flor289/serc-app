@@ -391,4 +391,25 @@ export default function SercApp() {
             <div style={{ background: "#0f172a", border: `1px solid ${s.color}30`, borderRadius: 12, padding: "24px 28px", marginBottom: 24 }}>
               <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 8 }}>EVALUACIÓN CREDITICIA — {resultado.denominacion}</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: s.color, marginBottom: 8, fontFamily: "monospace" }}>{veredicto}</div>
-              <div style={{ d
+              <div style={{ display: "flex", gap: 32, flexWrap: "wrap", marginTop: 16 }}>
+                <div><div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>SITUACIÓN MÁX.</div><SituacionBadge sit={situMax} /></div>
+                <div><div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>DEUDA TOTAL</div><span style={{ fontWeight: 700 }}>{formatPesos(totalDeuda)}</span></div>
+                <div><div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>ENTIDADES</div><span style={{ fontWeight: 700 }}>{entidades.length}</span></div>
+              </div>
+              <button onClick={() => generarPDF(resultado, historial, afip, cheques, cuitLimpio)}
+                style={{ marginTop: 20, background: "#1e293b", color: "#94a3b8", border: "1px solid #334155", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}>
+                ⬇ Exportar informe completo
+              </button>
+            </div>
+            <SeccionAFIP afip={afip} />
+            <SeccionCheques cheques={cheques} />
+            <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Situación actual</div>
+            {entidades.map((e, i) => <EntidadCard key={i} e={e} />)}
+            {historial && <GraficoHistorial periodos={historial.periodos} />}
+          </>
+        )}
+        <div style={{ marginTop: 60, fontSize: 11, color: "#334155", textAlign: "center" }}>SERC · Datos provistos por Central de Deudores BCRA y Padrón AFIP</div>
+      </div>
+    </div>
+  );
+}
