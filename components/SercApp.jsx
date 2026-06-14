@@ -17,7 +17,13 @@ function formatCUIT(raw) {
 }
 
 function formatPesos(n) {
-  return "$ " + (n * 1000).toLocaleString("es-AR");
+  return "$ " + ((n || 0) * 1000).toLocaleString("es-AR");
+}
+
+function formatPeriodo(p) {
+  if (!p || p.length < 6) return p;
+  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  return `${meses[parseInt(p.slice(4,6))-1]} ${p.slice(0,4)}`;
 }
 
 function SituacionBadge({ sit }) {
@@ -29,39 +35,103 @@ function SituacionBadge({ sit }) {
   );
 }
 
+function Row({ label, value }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+      <span style={{ color: "#64748b" }}>{label}</span>
+      <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{String(value ?? "—")}</span>
+    </div>
+  );
+}
+
 function EntidadCard({ e }) {
   const [abierto, setAbierto] = useState(false);
   return (
-    <div onClick={() => setAbierto(!abierto)} style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 10, padding: "16px 20px", marginBottom: 10, cursor: "pointer" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+    <div onClick={() => setAbierto(!abierto)} style={{ background: "#0a0f1e", border: "1px solid #1e293b", borderRadius: 8, padding: "12px 16px", marginBottom: 8, cursor: "pointer" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>{e.entidad}</div>
-          <div style={{ fontSize: 12, color: "#64748b" }}>Tocá para ver detalle {abierto ? "▲" : "▼"}</div>
+          <div style={{ fontWeight: 700, fontSize: 13 }}>{e.entidad}</div>
+          <div style={{ fontSize: 11, color: "#64748b" }}>{abierto ? "▲ Ocultar" : "▼ Ver detalle"}</div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontWeight: 700, fontFamily: "monospace", marginBottom: 4 }}>{formatPesos(e.monto || 0)}</div>
+          <div style={{ fontWeight: 700, fontFamily: "monospace", fontSize: 13 }}>{formatPesos(e.monto)}</div>
           <SituacionBadge sit={e.situacion} />
         </div>
       </div>
       {abierto && (
-        <div style={{ marginTop: 16, borderTop: "1px solid #1e293b", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          <Row label="Días de atraso" value={e.diasAtrasoPago ?? "—"} />
+        <div style={{ marginTop: 12, borderTop: "1px solid #1e293b", paddingTop: 10 }}>
+          <Row label="Días de atraso" value={e.diasAtrasoPago} />
           <Row label="Garantía" value={e.garantia || "Sin garantía"} />
-          <Row label="Fecha sit. 1" value={e.fechaSit1 || "—"} />
+          <Row label="Fecha sit. 1" value={e.fechaSit1} />
           <Row label="Refinanciaciones" value={e.refinanciaciones ? "Sí" : "No"} />
           <Row label="Proceso judicial" value={e.procesoJud ? "Sí" : "No"} />
           <Row label="En revisión" value={e.enRevision ? "Sí" : "No"} />
+          <Row label="Recategorización" value={e.recategorizacionOblig ? "Sí" : "No"} />
         </div>
       )}
     </div>
   );
 }
 
-function Row({ label, value }) {
+function GraficoHistorial({ periodos }) {
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState(null);
+  if (!periodos || periodos.length === 0) return null;
+
+  const ordenados = [...periodos].reverse();
+  const maxMonto = Math.max(...ordenados.map(p => p.entidades?.reduce((a, e) => a + (e.monto || 0), 0) || 0));
+  const maxSit = Math.max(...ordenados.map(p => Math.max(...(p.entidades?.map(e => e.situacion) || [1]))));
+
+  const periodoData = periodoSeleccionado
+    ? periodos.find(p => p.periodo === periodoSeleccionado)
+    : null;
+
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-      <span style={{ color: "#64748b" }}>{label}</span>
-      <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{String(value)}</span>
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>
+        Historial 24 meses — tocá un mes para ver detalle
+      </div>
+
+      {/* Gráfico de barras */}
+      <div style={{ background: "#0f172a", borderRadius: 10, padding: "16px 12px", marginBottom: 16, overflowX: "auto" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, minWidth: ordenados.length * 32, height: 80 }}>
+          {ordenados.map((p, i) => {
+            const total = p.entidades?.reduce((a, e) => a + (e.monto || 0), 0) || 0;
+            const sitMax = Math.max(...(p.entidades?.map(e => e.situacion) || [1]));
+            const s = SITUACIONES[sitMax] || SITUACIONES[1];
+            const altura = maxMonto > 0 ? Math.max(4, (total / maxMonto) * 64) : 4;
+            const seleccionado = periodoSeleccionado === p.periodo;
+            return (
+              <div key={i} onClick={() => setPeriodoSeleccionado(seleccionado ? null : p.periodo)}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", flex: 1 }}>
+                <div style={{
+                  width: "100%", height: altura,
+                  background: s.color,
+                  borderRadius: 3,
+                  opacity: seleccionado ? 1 : 0.6,
+                  border: seleccionado ? `2px solid white` : "2px solid transparent",
+                  transition: "all 0.15s"
+                }} />
+                <div style={{ fontSize: 8, color: "#64748b", textAlign: "center", transform: "rotate(-45deg)", whiteSpace: "nowrap" }}>
+                  {formatPeriodo(p.periodo)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Detalle del mes seleccionado */}
+      {periodoData && (
+        <div style={{ background: "#0f172a", border: "1px solid #3b82f6", borderRadius: 10, padding: "16px 20px", marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: "#3b82f6", fontWeight: 700, marginBottom: 12 }}>
+            {formatPeriodo(periodoData.periodo)}
+          </div>
+          {periodoData.entidades?.map((e, i) => <EntidadCard key={i} e={e} />)}
+          {(!periodoData.entidades || periodoData.entidades.length === 0) && (
+            <div style={{ color: "#64748b", fontSize: 13 }}>Sin deudas registradas este mes.</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -70,6 +140,7 @@ export default function SercApp() {
   const [cuit, setCuit] = useState("");
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const [historial, setHistorial] = useState(null);
   const [error, setError] = useState(null);
 
   const cuitLimpio = cuit.replace(/\D/g, "");
@@ -80,11 +151,19 @@ export default function SercApp() {
     setLoading(true);
     setError(null);
     setResultado(null);
+    setHistorial(null);
     try {
-      const res = await fetch(`/api/deudor/${cuitLimpio}`);
-      if (!res.ok) throw new Error("CUIT no encontrado en el BCRA");
-      const data = await res.json();
-      setResultado(data.results || data);
+      const [resActual, resHist] = await Promise.all([
+        fetch(`/api/deudor/${cuitLimpio}`),
+        fetch(`/api/historial/${cuitLimpio}`)
+      ]);
+      if (!resActual.ok) throw new Error("CUIT no encontrado en el BCRA");
+      const dataActual = await resActual.json();
+      setResultado(dataActual.results || dataActual);
+      if (resHist.ok) {
+        const dataHist = await resHist.json();
+        setHistorial(dataHist.results || dataHist);
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -134,8 +213,10 @@ export default function SercApp() {
               </div>
             </div>
 
-            <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Detalle por entidad</div>
+            <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Situación actual</div>
             {entidades.map((e, i) => <EntidadCard key={i} e={e} />)}
+
+            {historial && <GraficoHistorial periodos={historial.periodos} />}
           </>
         )}
 
