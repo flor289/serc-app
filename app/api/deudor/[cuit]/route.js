@@ -3,7 +3,7 @@ export async function GET(request, { params }) {
 
   try {
     const res = await fetch(
-      `https://api.bcra.gob.ar/centraldedeudores/v1.0/Deudas/${cuit}`,
+      `https://api.bcra.gob.ar/CentralDeDeudores/v1.0/Deudas/${cuit}`,
       {
         headers: {
           "Accept": "application/json",
